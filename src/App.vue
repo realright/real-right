@@ -71,4 +71,12 @@ export default IndexComponent;
 * {
   @apply box-border;
 }
+
+label {
+  @apply pb-1;
+}
+
+input {
+  @apply max-w-xs rounded bg-gray-300;
+}
 </style>

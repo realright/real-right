@@ -12582,13 +12582,13 @@
       stroke-width=".891"
       class="no-hover"
     />
-    <path
+    <!-- <path
       d="M275.15 525.53v63.053l41.271 37.326M1.161 447.569h197.18l76.81 77.957h98.592l60.76 61.907v38.472"
       fill="none"
       stroke="#a9a9a9"
       stroke-width="2.318"
       class="no-hover"
-    />
+    /> -->
   </svg>
 </template>
 
@@ -12598,7 +12598,7 @@ import { defineComponent, onMounted } from '@vue/composition-api';
 const CountyComponent = defineComponent({
   setup(props, context) {
     onMounted(() => {
-      context.emit('ready')
+      context.emit('ready');
     });
   },
 });

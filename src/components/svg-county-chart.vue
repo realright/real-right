@@ -6,9 +6,9 @@
       id="info-box"
       class="fixed"
       :style="{ top, left }"
-      v-show="state.selected"
+      v-if="!!state.selected"
     >
-      <h1>{{ state.selected.county }}</h1>
+      <h1>{{ state.selected.county }}, {{ state.selected.state }}</h1>
       <div>Cases: {{ state.selected.cases }}</div>
       <div>Deaths: {{ state.selected.deaths }}</div>
       <div>Mortality: {{ mortality }}%</div>
@@ -17,7 +17,12 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, reactive, computed } from '@vue/composition-api';
+import {
+  defineComponent,
+  reactive,
+  computed,
+  watch,
+} from '@vue/composition-api';
 import { groupBy } from 'lodash-es';
 
 import { getStateAbbreviation } from '@/utilities/getStateAbbreviation';
@@ -32,6 +37,7 @@ type CountyData = {
   fips: number;
   cases: number;
   deaths: number;
+  normalizedDeaths: number;
 };
 
 type CountyMap = { [key: string]: CountyData };
@@ -81,20 +87,7 @@ const SvgCountyChart = defineComponent({
     );
 
     const mostRecentData = Object.keys(groupedData).reduce((counties, key) => {
-      counties[key] = groupedData[key].reduce(
-        (acc, val) => {
-          return {
-            ...val,
-            deaths: acc.deaths + val.deaths,
-            fips: acc.fips + val.fips,
-          };
-        },
-        {
-          deaths: 0,
-          cases: 0,
-          fips: 0,
-        } as CountyData
-      );
+      counties[key] = groupedData[key].slice(-1)[0];
       return counties;
     }, {} as CountyMap);
 
@@ -102,29 +95,41 @@ const SvgCountyChart = defineComponent({
     // https://stackoverflow.com/questions/13368046/how-to-normalize-a-list-of-positive-numbers-in-javascript
     const deaths = Object.values(mostRecentData).map(d => d.deaths);
     // eslint-disable-next-line prefer-spread
-    const ratio = Math.max.apply(Math, deaths) / 6000;
+    const ratio = Math.max.apply(Math, deaths) / 80000;
 
     Object.entries(mostRecentData).map(([key, val]) => {
-      mostRecentData[key].deaths = Math.round(val.deaths / ratio);
+      mostRecentData[key].normalizedDeaths = Math.round(val.deaths / ratio);
+    });
+
+    watch(() => {
+      if (state.selected) {
+        state.boxEl = document.querySelector('#info-box') || undefined;
+      }
     });
 
     function applyClassesToCountyMap() {
-      state.boxEl = document.querySelector('#info-box') || undefined;
+      document.querySelector('svg').onmouseleave = () => {
+        state.selected = null;
+      };
 
-      Object.entries(mostRecentData).forEach(([key, value]) => {
-        if (value) {
-          const el = document.querySelector(`[data-name="${key}"]`);
+      Array.from(document.querySelectorAll('[data-name]')).forEach(el => {
+        const { name } = el.dataset;
+        const elData = mostRecentData[name];
 
-          if (el) {
-            el.onmousemove = (e: MouseEvent) => {
-              state.selected = value;
-              state.x = e.clientX;
-              state.y = e.clientY;
-            };
+        el.onmousemove = (e: MouseEvent) => {
+          state.selected = elData;
+          state.x = e.clientX;
+          state.y = e.clientY;
+        };
 
-            el.classList.add(`fill-red-${Math.ceil(value.deaths / 100) * 100}`);
-          }
-        }
+        const redClass = elData
+          ? `fill-red-${Math.min(
+              Math.ceil(elData.normalizedDeaths / 100) * 100,
+              1000
+            )}`
+          : 'fill-red-0';
+
+        el.classList.add(redClass);
       });
     }
 
@@ -146,13 +151,10 @@ export default SvgCountyChart;
   @apply bg-gray-900 border rounded border-gray-300 shadow-lg px-2 py-3;
 }
 
-.map-container {
-  @apply border border-gray-300 rounded bg-gray-700 p-2 shadow-md;
-}
-
 path:hover,
 path:active {
   fill: red;
+  @apply scale-150;
 }
 
 path.no-hover:hover {

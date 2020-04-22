@@ -2,6 +2,7 @@ module.exports = {
   theme: {
     extend: {},
     fill: theme => ({
+      'red-0': theme('colors.white'),
       'red-100': theme('colors.red.100'),
       'red-200': theme('colors.red.200'),
       'red-300': theme('colors.red.300'),

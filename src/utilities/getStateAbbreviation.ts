@@ -1,5 +1,6 @@
 import stateAbbreviations from '@/assets/state-abbreviations.json';
 
-type StateName = keyof stateAbbreviations;
+export type StateName = keyof typeof stateAbbreviations;
 
-export const getStateAbbreviation = (code: string) => stateAbbreviations[code];
+export const getStateAbbreviation = (code: StateName) =>
+  stateAbbreviations[code];

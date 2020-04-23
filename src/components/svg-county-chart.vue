@@ -2,12 +2,7 @@
   <div class="map-container">
     <CountyMap @ready="applyClassesToCountyMap" />
 
-    <div
-      id="info-box"
-      class="fixed"
-      :style="{ top, left }"
-      v-if="!!state.selected"
-    >
+    <div id="info-box" class="fixed" :style="{ top, left }" v-if="!!state.selected">
       <h1>{{ state.selected.county }}, {{ state.selected.state }}</h1>
       <div>Cases: {{ state.selected.cases }}</div>
       <div>Deaths: {{ state.selected.deaths }}</div>
@@ -25,9 +20,12 @@ import {
 } from '@vue/composition-api';
 import { groupBy } from 'lodash-es';
 
-import { getStateAbbreviation } from '@/utilities/getStateAbbreviation';
+import {
+  getStateAbbreviation,
+  StateName,
+} from '@/utilities/getStateAbbreviation';
 
-import CountyMap from '@/components/counties';
+import CountyMap from '@/components/counties.vue';
 import countyData from '@/assets/counties.json';
 
 type CountyData = {
@@ -83,7 +81,8 @@ const SvgCountyChart = defineComponent({
     const data = countyData as CountyData[];
     const groupedData: CountyGroup = groupBy(
       data,
-      (d: CountyData) => `${d.county}, ${getStateAbbreviation(d.state)}`
+      (d: CountyData) =>
+        `${d.county}, ${getStateAbbreviation(d.state as StateName)}`
     );
 
     const mostRecentData = Object.keys(groupedData).reduce((counties, key) => {
@@ -108,14 +107,20 @@ const SvgCountyChart = defineComponent({
     });
 
     function applyClassesToCountyMap() {
-      document.querySelector('svg').onmouseleave = () => {
-        state.selected = null;
-      };
+      const svgEl = document.querySelector('svg');
+
+      if (svgEl) {
+        svgEl.onmouseleave = () => {
+          state.selected = undefined;
+        };
+      }
 
       Array.from(document.querySelectorAll('[data-name]')).forEach(el => {
+        // @ts-ignore
         const { name } = el.dataset;
         const elData = mostRecentData[name];
 
+        // @ts-ignore
         el.onmousemove = (e: MouseEvent) => {
           state.selected = elData;
           state.x = e.clientX;

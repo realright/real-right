@@ -6,10 +6,7 @@
       class="focus:outline-none focus:shadow-outline"
       v-model="state.inputText"
     />
-    <div
-      v-if="state.showSuggestions && state.suggestions.length > 0"
-      class="typeahead-suggestions shadow-lg"
-    >
+    <div v-if="state.showSuggestions" class="typeahead-suggestions shadow-lg">
       <div v-if="state.stateSuggestions.length > 0" class="typeahead-header">
         State
       </div>
@@ -60,18 +57,22 @@
 import {
   computed,
   defineComponent,
-  onMounted,
+  PropType,
   reactive,
-  watchEffect,
 } from '@vue/composition-api';
+
+type Suggestion = {
+  text: string;
+  type: string;
+};
 
 type StateType = {
   inputText: string;
   showSuggestions: boolean;
-  suggestions: Array<Record<string, string>>;
-  zipCodeSuggestions: Array<Record<string, string>>;
-  countySuggestions: Array<Record<string, string>>;
-  stateSuggestions: Array<Record<string, string>>;
+  suggestions: Suggestion[];
+  zipCodeSuggestions: Suggestion[];
+  countySuggestions: Suggestion[];
+  stateSuggestions: Suggestion[];
 };
 
 const MAX_SUGGESTIONS = 5;
@@ -89,7 +90,7 @@ const TypeaheadComponent = defineComponent({
       required: true,
     },
     data: {
-      type: Array,
+      type: Array as PropType<Array<Suggestion>>,
       required: true,
     },
   },
@@ -97,19 +98,17 @@ const TypeaheadComponent = defineComponent({
     const state: StateType = reactive({
       inputText: props.value,
       showSuggestions: computed(() => {
-        return props.value !== state.inputText;
+        return props.value !== state.inputText && state.suggestions.length > 0;
       }),
-      suggestions: computed(() => {
-        return state.inputText.length > 1
-          ? props.data.filter(suggestion => {
-              return (
-                suggestion.text
-                  .toLowerCase()
-                  .indexOf(state.inputText.toLowerCase()) !== -1
-              );
-            })
-          : [];
-      }),
+      suggestions: computed(() =>
+        state.inputText.length > 1
+          ? props.data.filter(
+              s =>
+                s.text.toLowerCase().indexOf(state.inputText.toLowerCase()) !==
+                -1
+            )
+          : []
+      ),
       zipCodeSuggestions: computed(() =>
         state.suggestions
           .filter(s => s.type === 'zipCode')

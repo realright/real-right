@@ -3,11 +3,13 @@
     class="app-container h-screen w-screen flex pt-5 items-center bg-gray-800 text-gray-300 flex-col p-4"
   >
     <h1 class="heading text-5xl">Welcome to Because It's Real, Right</h1>
-    <label>Enter Your Zip Code</label>
+    <label>Enter Your State, County, or Zip Code</label>
     <typeahead
-      v-model="typeaheadInput"
+      class="flex-col w-full self-center max-w-md"
+      v-model="state.typeaheadInput"
       :data="suggestions"
-      placeholder="78745"
+      @input="onTypeaheadSubmit"
+      placeholder="Dallas County, Texas"
     />
 
     <svg-county-chart class="mt-5" />
@@ -37,26 +39,26 @@ const IndexComponent = defineComponent({
   },
   setup() {
     const state: StateType = reactive({
-      typeaheadInput: 0,
-      // double: computed(() => state.count * 2)
+      typeaheadInput: '',
     });
 
     const texas = computed(() => 'Texas');
 
-    async function go() {
-      console.log(
-        "Ok, tell all the charts to rerender with the new input, if it's a valid zip code..."
+    async function onTypeaheadSubmit(str: string) {
+      setTimeout(
+        () => window.alert('Go get data for ' + state.typeaheadInput),
+        100
       );
     }
 
     onMounted(async () => {
-      go();
+      console.log('mounted');
     });
 
     return {
       state,
       texas,
-      go,
+      onTypeaheadSubmit,
       suggestions: getTypeaheadSuggestions(),
     };
   },

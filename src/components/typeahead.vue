@@ -3,42 +3,54 @@
     <input
       type="text"
       :placeholder="placeholder"
-      class="text-black focus:outline-none focus:shadow-outline border border-gray-300 rounded-lg py-2 px-4 block w-full appearance-none leading-normal"
+      class="focus:outline-none focus:shadow-outline"
       v-model="state.inputText"
     />
-    <div v-if="state.suggestions.length > 0">
-      <div v-if="state.zipCodeSuggestions.length > 0">
-        Zip Code
-      </div>
-      <div
-        v-for="zipCodeSuggestion in state.zipCodeSuggestions"
-        :key="zipCodeSuggestion.text"
-        @click="$emit('input', zipCodeSuggestion.text)"
-      >
-        {{ zipCodeSuggestion.text }}
-      </div>
-
-      <div v-if="state.countySuggestions.length > 0">
-        County
-      </div>
-      <div
-        v-for="countySuggestion in state.countySuggestions"
-        :key="countySuggestion.text"
-        @click="$emit('input', countySuggestion.text)"
-      >
-        {{ countySuggestion.text }}
-      </div>
-
-      <div v-if="state.stateSuggestions.length > 0">
+    <div
+      v-if="state.showSuggestions && state.suggestions.length > 0"
+      class="typeahead-suggestions shadow-lg"
+    >
+      <div v-if="state.stateSuggestions.length > 0" class="typeahead-header">
         State
       </div>
 
       <div
         v-for="stateSuggestion in state.stateSuggestions"
         :key="stateSuggestion.text"
-        @click="$emit('input', stateSuggestion.text)"
+        class="typeahead-suggestion"
+        @click="selectTypeahead(stateSuggestion.text)"
       >
-        {{ stateSuggestion.text }}
+        <div>{{ stateSuggestion.text }}</div>
+      </div>
+
+      <div
+        v-if="state.countySuggestions.length > 0"
+        class="typeahead-header mt-2"
+      >
+        County
+      </div>
+      <div
+        v-for="countySuggestion in state.countySuggestions"
+        :key="countySuggestion.text"
+        class="typeahead-suggestion"
+        @click="selectTypeahead(countySuggestion.text)"
+      >
+        <div>{{ countySuggestion.text }}</div>
+      </div>
+
+      <div
+        v-if="state.zipCodeSuggestions.length > 0"
+        class="typeahead-header mt-2"
+      >
+        Zip Code
+      </div>
+      <div
+        v-for="zipCodeSuggestion in state.zipCodeSuggestions"
+        :key="zipCodeSuggestion.text"
+        class="typeahead-suggestion"
+        @click="selectTypeahead(zipCodeSuggestion.text)"
+      >
+        <div>{{ zipCodeSuggestion.text }}</div>
       </div>
     </div>
   </div>
@@ -50,15 +62,19 @@ import {
   defineComponent,
   onMounted,
   reactive,
+  watchEffect,
 } from '@vue/composition-api';
 
 type StateType = {
   inputText: string;
+  showSuggestions: boolean;
   suggestions: Array<Record<string, string>>;
   zipCodeSuggestions: Array<Record<string, string>>;
   countySuggestions: Array<Record<string, string>>;
   stateSuggestions: Array<Record<string, string>>;
 };
+
+const MAX_SUGGESTIONS = 5;
 
 const TypeaheadComponent = defineComponent({
   name: 'Typeahead',
@@ -77,9 +93,12 @@ const TypeaheadComponent = defineComponent({
       required: true,
     },
   },
-  setup(props) {
+  setup(props, { emit }) {
     const state: StateType = reactive({
-      inputText: '',
+      inputText: props.value,
+      showSuggestions: computed(() => {
+        return props.value !== state.inputText;
+      }),
       suggestions: computed(() => {
         return state.inputText.length > 1
           ? props.data.filter(suggestion => {
@@ -92,22 +111,30 @@ const TypeaheadComponent = defineComponent({
           : [];
       }),
       zipCodeSuggestions: computed(() =>
-        state.suggestions.filter(s => s.type === 'zipCode')
+        state.suggestions
+          .filter(s => s.type === 'zipCode')
+          .slice(0, MAX_SUGGESTIONS)
       ),
       countySuggestions: computed(() =>
-        state.suggestions.filter(s => s.type === 'county')
+        state.suggestions
+          .filter(s => s.type === 'county')
+          .slice(0, MAX_SUGGESTIONS)
       ),
       stateSuggestions: computed(() =>
-        state.suggestions.filter(s => s.type === 'state')
+        state.suggestions
+          .filter(s => s.type === 'state')
+          .slice(0, MAX_SUGGESTIONS)
       ),
     });
 
-    onMounted(() => {
-      console.log(props.data);
-    });
+    function selectTypeahead(str: string) {
+      state.inputText = str;
+      emit('input', str);
+    }
 
     return {
       state,
+      selectTypeahead,
     };
   },
 });
@@ -117,6 +144,21 @@ export default TypeaheadComponent;
 
 <style scoped>
 input {
-  @apply max-w-xs rounded bg-gray-300;
+  @apply rounded bg-gray-300 text-black border border-gray-300 rounded-lg py-2 px-4 block w-full appearance-none leading-normal;
+}
+
+.typeahead-suggestions {
+  @apply absolute py-1 rounded bg-gray-300 text-black;
+}
+
+.typeahead-header {
+  @apply text-gray-500 text-xs px-3;
+}
+
+.typeahead-suggestion:hover {
+  background-color: purple;
+}
+.typeahead-suggestion > div {
+  @apply px-3;
 }
 </style>
